@@ -8,18 +8,141 @@ output:
 
 ## Loading and preprocessing the data
 
+Before starting with the analysis, these have been the options set and the operations made:
+
+```{r echo=TRUE}
+library(tidyverse)
+options(max.print = 50, scipen = 999)
+
+unzip("./activity.zip")
+activity <- read.csv("./activity.csv")
+activity$date <- parse_date(activity$date, "%Y-%m-%d")
+
+```
 
 
 ## What is mean total number of steps taken per day?
 
+Following command calculates sum of steps taken per day:
+```{r echo=TRUE}
+steps_by_day <- activity %>%
+  group_by(date) %>%
+  summarize(
+    total_steps = sum(steps, na.rm = TRUE)
+  )
+```
 
+Histogram of steps taken per day:
+```{r echo=TRUE}
+ggplot(steps_by_day, aes(total_steps))+
+  geom_histogram()+
+  theme_minimal()+
+  labs(x="Steps Taken", y="Number Days", title="Number of Days with same Step Count")
+```
+
+```{r echo=TRUE}
+mean_steps_by_date <- sum(activity$steps,na.rm = TRUE)/length(unique(activity$date))
+
+median_steps_by_date <- median(steps_by_day$total_steps,na.rm=TRUE)
+```
+
+The mean is `r mean_steps_by_date` and the median is `r median_steps_by_date`
 
 ## What is the average daily activity pattern?
 
+Temporal distribution of steps taken during a day
+```{r echo=TRUE}
+steps_by_interval <- activity %>%
+  group_by(interval)%>%
+  summarize(
+    avg_steps = mean(steps,na.rm = TRUE)
+  )
 
+ggplot(steps_by_interval,aes(interval,avg_steps))+
+  geom_line()+
+  theme_minimal()+
+  labs(x="Time Interval",y="Average Steps","Average Steps per Time Interval")
+```
+
+
+```{r echo=TRUE}
+max_interval <- arrange(steps_by_interval,desc(avg_steps))[1,1]
+```
+
+The 5-minute interval that cointains the maximum number of steps is `r max_interval`
 
 ## Imputing missing values
 
 
+```{r echo=TRUE}
+total_nas <- sum(is.na(activity$steps))
+```
+
+Total missing values were `r total_nas`
+
+Missing values correction was made by using average steps per interval:
+```{r echo=TRUE}
+activity_revised <- activity
+  
+for(i in 1:length(activity_revised$steps)){
+  if(is.na(activity_revised$steps[i]) == TRUE) {
+    activity_revised$steps[i] = filter(steps_by_interval, interval == activity_revised$interval[i])[[1,2]]
+  } 
+}
+```
+
+Distribution of the new data:
+```{r echo=TRUE}
+steps_by_day_revised <- activity_revised %>%
+  group_by(date) %>%
+  summarize(
+    total_steps = sum(steps, na.rm = TRUE)
+  )
+
+ggplot(steps_by_day_revised, aes(total_steps))+
+  geom_histogram()+
+  theme_minimal()+
+  labs(x="Steps Taken", y="Number Days", title="Number of Days with same Step Count")
+
+```
+
+```{r echo=TRUE}
+mean_steps_by_date_revised <- sum(activity_revised$steps,na.rm = TRUE)/length(unique(activity_revised$date))
+median_steps_by_date_revised <- median(steps_by_day_revised$total_steps,na.rm=TRUE)
+```
+
+The average of steps of new data `r mean_steps_by_date_revised` is and the median is `r median_steps_by_date_revised`
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+Creating new factor variable showing wheter data is from weekdays or weekends:
+```{r echo=TRUE}
+day_week <- seq_along(activity_revised$date)
+
+for(i in 1:length(activity_revised$date)){
+  if(weekdays(activity_revised$date[i]) %in% c("Saturday","Sunday")) {
+    day_week[i] = "Weekend"
+  } else {
+    day_week[i] = "Weekday"
+  }
+}
+
+day_week <- factor(day_week,c("Weekday","Weekend"))
+```
+
+Temporal distribution of steps during weekdays and weekends:
+```{r}
+activity_revised$day_week <- day_week
+
+steps_by_intervay_and_weekday <- activity_revised %>%
+  group_by(interval, day_week) %>%
+  summarize(
+    avg_steps = mean(steps)
+  )
+
+ggplot(steps_by_intervay_and_weekday, aes(interval,avg_steps))+
+  geom_line()+
+  theme_minimal()+
+  facet_wrap(~day_week,nrow=2)+
+  labs(x="Interval",y="Number of Steps")
+```
