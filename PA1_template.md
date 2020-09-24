@@ -8,7 +8,7 @@ output:
 
 ## Loading and preprocessing the data
 
-Before starting with the analysis, these has been the options set and the operations made:
+Before starting with the analysis, these have been the options set and the operations made:
 
 
 ```r
@@ -43,7 +43,7 @@ activity$date <- parse_date(activity$date, "%Y-%m-%d")
 
 ## What is mean total number of steps taken per day?
 
-Total steps taken per day is:
+Following command calculates sum of steps taken per day:
 
 ```r
 steps_by_day <- activity %>%
@@ -122,9 +122,9 @@ The 5-minute interval that cointains the maximum number of steps is 835
 total_nas <- sum(is.na(activity$steps))
 ```
 
-Total missin values were 2304
+Total missing values were 2304
 
-Missin values correction was made by using average steps per interval:
+Missing values correction was made by using average steps per interval:
 
 ```r
 activity_revised <- activity
